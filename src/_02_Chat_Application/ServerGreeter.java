@@ -10,68 +10,79 @@ import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JTextArea;
 
 public class ServerGreeter extends Thread {
-
-	ServerSocket server;
-	Socket socket;
-	DataOutputStream dos;
-	DataInputStream dis;
-
-	JFrame frame = new JFrame();
+	JFrame frame = new JFrame("Server");
 	JPanel panel = new JPanel();
-	JButton message = new JButton("Send Message");
+	JButton button = new JButton("send message");
+	JTextArea textArea = new JTextArea();
+	
+	ServerSocket server;
+
+	Socket socket;
+
+	DataInputStream dis;
+	DataOutputStream dos;
 
 	public ServerGreeter() throws IOException {
-
 		server = new ServerSocket(8080);
+	}
 
+	void CreateGUI() {
+		frame.setVisible(true);
+		frame.add(panel);
+		panel.add(textArea);
+		panel.add(button);
+
+		button.addActionListener(e -> {
+			String message = JOptionPane.showInputDialog("What is your message");
+			try {
+				dos.writeUTF(message);
+			} catch (IOException e1) {
+				e1.printStackTrace();
+			}
+		});
+
+		frame.pack();
 	}
 
 	public void run() {
-		boolean done = true;
-		while (done) {
+		boolean done = false;
+
+		while (!done) {
 			try {
 				JOptionPane.showMessageDialog(null, "Waiting for a client to connect");
 
 				socket = server.accept();
 
+				done = true;
+
 				JOptionPane.showMessageDialog(null, "Client has connected ");
 
 				dis = new DataInputStream(socket.getInputStream());
-
-				JOptionPane.showMessageDialog(null, "From Client: \n" + dis.readUTF());
+				System.out.println(dis.readUTF());
 
 				dos = new DataOutputStream(socket.getOutputStream());
-
-				dos.writeUTF("Welcome Client!");
+				dos.writeUTF("Welcome Client");
 
 			} catch (IOException e) {
 				e.printStackTrace();
-
 				JOptionPane.showMessageDialog(null, "IOException");
 
-				done = false;
-
+				done = true;
 			}
 		}
 
-	}
-
-	public void createGUI() {
-		frame.setVisible(true);
-		frame.add(panel);
-		panel.add(message);
-
-		message.addActionListener(e -> {
-			String message = JOptionPane.showInputDialog("Whats your message");
+		while (done && socket != null) {
 			try {
-				dos.writeUTF(message);
-			} catch (IOException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
+				//JOptionPane.showMessageDialog(null, "From Client:\n" + dis.readUTF());
+				textArea.setText(textArea.getText() + "\n" + dis.readUTF());
+				frame.pack();
+			} catch (IOException e) {
+				e.printStackTrace();
 			}
-		});
+		}
 
 	}
 
@@ -80,12 +91,11 @@ public class ServerGreeter extends Thread {
 			ServerGreeter main = new ServerGreeter();
 			Thread serverGreeter = new Thread(main);
 			serverGreeter.start();
-			main.createGUI();
+			main.CreateGUI();
 
 		} catch (IOException e) {
 			e.printStackTrace();
 
 		}
 	}
-
 }
